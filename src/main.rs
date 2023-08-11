@@ -1,11 +1,16 @@
+mod audiobuffer;
+mod metadata;
+
 use std::io::Read;
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread;
-use rodio::{Decoder, OutputStream, Sink};
-use rodio::source::{SineWave, Source};
+use audiobuffer::AudioBuffer;
+use metadata::Metadata;
+use rodio::{OutputStream, Sink};
 
-const audio_buffer_size: usize = 1024;
+const audio_buffer_size: usize = 2048;
 const metadata_size: usize = 2 * std::mem::size_of::<i32>();
 const buffer_size: usize = (audio_buffer_size * std::mem::size_of::<f32>()) + metadata_size;
 const prebuffer_size: usize = 10;
@@ -76,26 +81,6 @@ fn start_server(server_running: &mut bool, processed_buffers: &Arc<Mutex<Vec<Aud
     });
 }
 
-#[derive(Debug)]
-pub struct Metadata {
-    pub sample_rate: i32,
-    pub buffer_size: i32,
-}
-
-impl Default for Metadata {
-    fn default() -> Self {
-        Metadata {
-            sample_rate: 0,
-            buffer_size: 0,
-        }
-    }
-}
-
-pub struct AudioBuffer {
-    pub samples: Vec<f32>,
-    pub metadata: Metadata,
-}
-
 fn main() {
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     let sink = Sink::try_new(&stream_handle).unwrap();
@@ -112,12 +97,13 @@ fn main() {
         let new_num_buffers = processed_buffers.lock().unwrap().len();
         if current_prebuffer_size >= prebuffer_size && new_num_buffers > num_buffers {
             let temp_processed_buffers = processed_buffers.lock().unwrap();
+            if current_buffer_idx >= temp_processed_buffers.len() {
+                continue;
+            }
+
             let current_buffer = temp_processed_buffers.get(current_buffer_idx).unwrap();
-            let samples_to_play = current_buffer.samples.clone(); //Creates a new vec storing new samples from the last that were
-            
-            let source = rodio::buffer::SamplesBuffer::new(1, current_buffer.metadata.sample_rate.try_into().unwrap(), samples_to_play).amplify(0.9);
-            sink.append(source);
-            sink.sleep_until_end();
+
+            current_buffer.play(&sink);
             current_buffer_idx += 1;
         }
         num_buffers = new_num_buffers;
