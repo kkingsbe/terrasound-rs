@@ -1,4 +1,4 @@
-use rodio::{Sink, Source};
+use rodio::Sink;
 
 use crate::metadata::Metadata;
 
@@ -11,8 +11,8 @@ pub struct AudioBuffer {
 impl AudioBuffer {
     pub fn play(&self, sink: &Sink) {
         let sample_rate = self.metadata.sample_rate as u32;
-        let source = rodio::buffer::SamplesBuffer::new(1, sample_rate, self.samples.clone());
-        sink.append(source);
+        let buff = rodio::buffer::SamplesBuffer::new(1, sample_rate, self.samples.clone());
+        sink.append(buff);
         sink.sleep_until_end();
     }
 }
