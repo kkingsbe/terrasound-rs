@@ -11,7 +11,7 @@ use audiosource::AudioSource;
 use metadata::Metadata;
 use rodio::{OutputStream, Sink};
 
-const AUDIO_BUFFER_SIZE: usize = 2048;
+const AUDIO_BUFFER_SIZE: usize = 1024;
 const METADATA_SIZE: usize = 2 * std::mem::size_of::<i32>();
 const BUFFER_SIZE: usize = (AUDIO_BUFFER_SIZE * std::mem::size_of::<f32>()) + METADATA_SIZE;
 const PREBUFFER_SIZE: usize = 10;
