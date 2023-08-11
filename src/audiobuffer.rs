@@ -2,6 +2,7 @@ use rodio::{Sink, Source};
 
 use crate::metadata::Metadata;
 
+#[derive(Debug, Clone)]
 pub struct AudioBuffer {
     pub samples: Vec<f32>,
     pub metadata: Metadata,

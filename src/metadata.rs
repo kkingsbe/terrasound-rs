@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Metadata {
     pub sample_rate: i32,
     pub buffer_size: i32,
