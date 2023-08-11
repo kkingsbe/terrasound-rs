@@ -1,6 +1,5 @@
 use std::io::Read;
 use std::sync::{Arc, Mutex};
-use std::sync::mpsc::Sender;
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 
@@ -8,7 +7,7 @@ use crate::audiobuffer::AudioBuffer;
 use crate::audiosource::AudioSource;
 use crate::metadata::Metadata;
 
-const AUDIO_BUFFER_SIZE: usize = 1024;
+const AUDIO_BUFFER_SIZE: usize = 2048;
 const METADATA_SIZE: usize = 2 * std::mem::size_of::<i32>();
 const BUFFER_SIZE: usize = (AUDIO_BUFFER_SIZE * std::mem::size_of::<f32>()) + METADATA_SIZE;
 
@@ -23,19 +22,17 @@ impl AudioSocketServer {
         }
     }
 
-    pub fn begin(&self, server_running: &mut bool, audio_source: Arc<Mutex<AudioSource>>) {
-        *server_running = true;
+    pub fn begin(&self, client_connected: Arc<Mutex<bool>>, audio_source: Arc<Mutex<AudioSource>>) {
         let listener: TcpListener = TcpListener::bind(format!("127.0.0.1:{}", self.port)).unwrap();
-        let server_running_clone = server_running.clone();
     
         thread::spawn(move || {
             for stream in listener.incoming() {
                 match stream {
                     Ok(tcp_stream) => {
-                        let server_running_clone = server_running_clone.clone(); // Clone for the closure
                         let audio_source = audio_source.clone();
+                        let client_connected = client_connected.clone();
                         thread::spawn(move || {
-                            handle_client(tcp_stream, audio_source);
+                            handle_client(tcp_stream, audio_source, client_connected);
                         });
                     }
                     Err(e) => eprintln!("Error accepting connection: {}", e),
@@ -45,8 +42,9 @@ impl AudioSocketServer {
     }
 }
 
-fn handle_client(mut tcp_stream: TcpStream, audio_source: Arc<Mutex<AudioSource>>) {
+fn handle_client(mut tcp_stream: TcpStream, audio_source: Arc<Mutex<AudioSource>>, client_connected: Arc<Mutex<bool>>) {
     let mut buffer = [0; BUFFER_SIZE];
+    *client_connected.lock().unwrap() = true;
 
     loop {
         let size = match tcp_stream.read(&mut buffer) {
@@ -82,6 +80,7 @@ fn handle_client(mut tcp_stream: TcpStream, audio_source: Arc<Mutex<AudioSource>
         };
 
         audio_source.lock().unwrap().add_buffer(new_buff);
-        //audio_source.lock().unwrap().play_next();
     }
+
+    *client_connected.lock().unwrap() = false;
 }
