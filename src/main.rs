@@ -3,13 +3,13 @@ mod audiobuffer;
 mod metadata;
 mod audiosocketserver;
 
-use std::sync::mpsc::{channel, Sender, Receiver};
+use std::sync::{mpsc::{channel, Sender, Receiver}, Arc, Mutex};
 use audiobuffer::AudioBuffer;
 use audiosocketserver::AudioSocketServer;
 use audiosource::AudioSource;
 use rodio::{OutputStream, Sink};
 
-const PREBUFFER_SIZE: usize = 10;
+const PREBUFFER_SIZE: usize = 20;
 
 fn main() {
     //Create MPSC chanel
@@ -20,43 +20,47 @@ fn main() {
     let sink = Sink::try_new(&stream_handle).unwrap();
 
     //Create the audio source which stores the buffers
-    let mut audio_source = AudioSource { 
+    let audio_source: Arc<Mutex<AudioSource>> = Arc::new(Mutex::new(AudioSource { 
         buffers: Vec::new(),
         current_buffer_idx: 0,
         sink,
-    };
+    }));
     
     let mut server_running: Box<bool> = Box::new(false);
 
-    //Start the TCP server
+    //Start the TCP socket server
     let server: AudioSocketServer = AudioSocketServer::new(6968);
-    server.begin(&mut *server_running, tx.clone());
+    server.begin(&mut *server_running, audio_source.clone());
 
     let mut num_buffers: usize = 0;
     let mut playing = false;
 
     while *server_running {
         //Recieve a new buffer if able
-        let new_buff_res = rx.recv();
-        if new_buff_res.is_ok() {
-            //Add the buffer to the audio source
-            audio_source.add_buffer(new_buff_res.unwrap());
-        }
+        //let new_buff_res = rx.recv();
+        //println!("Empty: {}", audio_source.sink.empty());
+        println!("Len: {}", audio_source.lock().unwrap().sink.len());
         
-        let current_prebuffer_size = num_buffers - audio_source.current_buffer_idx;
-        let new_num_buffers = audio_source.buffers.len();
+        let mut temp_audio_source = audio_source.lock().unwrap();
+        let current_prebuffer_size = num_buffers - temp_audio_source.current_buffer_idx;
+        let new_num_buffers = temp_audio_source.buffers.len();
+
+        
+        if current_prebuffer_size < PREBUFFER_SIZE {
+            //println!("Prebuffering... {}/{}", current_prebuffer_size, PREBUFFER_SIZE);
+        }
 
         //If the prebuffer is large enough, begin playback
         if !playing && current_prebuffer_size >= PREBUFFER_SIZE {
             playing = true;
         }
-
+        
         if playing {
-            if audio_source.current_buffer_idx >= new_num_buffers {
+            if temp_audio_source.current_buffer_idx >= new_num_buffers {
                 continue;
             }
 
-            audio_source.play_next();
+            temp_audio_source.play_next();
         }
         num_buffers = new_num_buffers;
     }

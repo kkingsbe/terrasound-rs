@@ -13,6 +13,6 @@ impl AudioBuffer {
         let sample_rate = self.metadata.sample_rate as u32;
         let buff = rodio::buffer::SamplesBuffer::new(1, sample_rate, self.samples.clone());
         sink.append(buff);
-        sink.sleep_until_end();
+        //sink.sleep_until_end();
     }
 }

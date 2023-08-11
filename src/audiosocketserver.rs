@@ -1,9 +1,11 @@
 use std::io::Read;
+use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Sender;
 use std::net::{TcpListener, TcpStream};
 use std::thread;
 
 use crate::audiobuffer::AudioBuffer;
+use crate::audiosource::AudioSource;
 use crate::metadata::Metadata;
 
 const AUDIO_BUFFER_SIZE: usize = 1024;
@@ -21,7 +23,7 @@ impl AudioSocketServer {
         }
     }
 
-    pub fn begin(&self, server_running: &mut bool, tx: Sender<AudioBuffer>) {
+    pub fn begin(&self, server_running: &mut bool, audio_source: Arc<Mutex<AudioSource>>) {
         *server_running = true;
         let listener: TcpListener = TcpListener::bind(format!("127.0.0.1:{}", self.port)).unwrap();
         let server_running_clone = server_running.clone();
@@ -31,9 +33,9 @@ impl AudioSocketServer {
                 match stream {
                     Ok(tcp_stream) => {
                         let server_running_clone = server_running_clone.clone(); // Clone for the closure
-                        let tx = tx.clone();
+                        let audio_source = audio_source.clone();
                         thread::spawn(move || {
-                            handle_client(tcp_stream, tx);
+                            handle_client(tcp_stream, audio_source);
                         });
                     }
                     Err(e) => eprintln!("Error accepting connection: {}", e),
@@ -43,7 +45,7 @@ impl AudioSocketServer {
     }
 }
 
-fn handle_client(mut tcp_stream: TcpStream, tx: Sender<AudioBuffer>) {
+fn handle_client(mut tcp_stream: TcpStream, audio_source: Arc<Mutex<AudioSource>>) {
     let mut buffer = [0; BUFFER_SIZE];
 
     loop {
@@ -79,6 +81,7 @@ fn handle_client(mut tcp_stream: TcpStream, tx: Sender<AudioBuffer>) {
             }
         };
 
-        tx.send(new_buff).unwrap();
+        audio_source.lock().unwrap().add_buffer(new_buff);
+        //audio_source.lock().unwrap().play_next();
     }
 }
