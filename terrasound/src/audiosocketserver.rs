@@ -5,11 +5,8 @@ use std::thread;
 
 use crate::audiobuffer::AudioBuffer;
 use crate::audiosource::AudioSource;
+use crate::config::{BUFFER_SIZE, METADATA_SIZE};
 use crate::metadata::Metadata;
-
-const AUDIO_BUFFER_SIZE: usize = 2048;
-const METADATA_SIZE: usize = 2 * std::mem::size_of::<i32>();
-const BUFFER_SIZE: usize = (AUDIO_BUFFER_SIZE * std::mem::size_of::<f32>()) + METADATA_SIZE;
 
 pub struct AudioSocketServer {
     pub port: u16,

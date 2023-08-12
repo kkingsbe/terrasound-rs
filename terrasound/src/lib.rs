@@ -1,3 +1,4 @@
+pub mod config;
 mod audiosource;
 mod audiobuffer;
 mod metadata;
@@ -6,9 +7,8 @@ mod audiosocketserver;
 use std::{sync::{Arc, Mutex}, thread};
 use audiosocketserver::AudioSocketServer;
 use audiosource::AudioSource;
+use config::PREBUFFER_SIZE;
 use rodio::{OutputStream, Sink, OutputStreamHandle};
-
-const PREBUFFER_SIZE: usize = 5;
 
 pub struct Terrasound {
     is_playing: Arc<Mutex<bool>>,
