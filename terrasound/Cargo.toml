@@ -5,6 +5,7 @@ edition = "2021"
 description = "This is a Flutter package that allows you to play live audio data which is received over a local socket connection."
 repository = "https://github.com/kkingsbe/terrasound-rs"
 readme = "../readme.md"
+license = "MIT"
 
 [dependencies]
 rodio = "0.17.1"
