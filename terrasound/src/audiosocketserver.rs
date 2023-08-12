@@ -23,6 +23,7 @@ impl AudioSocketServer {
     }
 
     pub fn begin(&self, client_connected: Arc<Mutex<bool>>, audio_source: Arc<Mutex<AudioSource>>) {
+        println!("Beginning socket server on port {}", self.port);
         let listener: TcpListener = TcpListener::bind(format!("127.0.0.1:{}", self.port)).unwrap();
     
         thread::spawn(move || {
@@ -47,7 +48,7 @@ fn handle_client(mut tcp_stream: TcpStream, audio_source: Arc<Mutex<AudioSource>
     *client_connected.lock().unwrap() = true;
 
     loop {
-        let size = match tcp_stream.read(&mut buffer) {
+        match tcp_stream.read(&mut buffer) {
             Ok(size) if size == 0 => {
                 println!("Client closed connection");
                 break;
