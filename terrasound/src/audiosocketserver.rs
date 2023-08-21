@@ -10,27 +10,31 @@ use crate::metadata::Metadata;
 
 pub struct AudioSocketServer {
     pub port: u16,
+    running: Arc<Mutex<bool>>
 }
 
 impl AudioSocketServer {
     pub fn new(port: u16) -> AudioSocketServer {
         AudioSocketServer {
-            port
+            port,
+            running: Arc::new(Mutex::new(true))
         }
     }
 
-    pub fn begin(&self, client_connected: Arc<Mutex<bool>>, audio_source: Arc<Mutex<AudioSource>>) {
+    pub fn begin(&mut self, audio_source: Arc<Mutex<AudioSource>>, running: Arc<Mutex<bool>>) {
         println!("Beginning socket server on port {}", self.port);
         let listener: TcpListener = TcpListener::bind(format!("127.0.0.1:{}", self.port)).unwrap();
     
         thread::spawn(move || {
+            let running = running.clone();
             for stream in listener.incoming() {
                 match stream {
                     Ok(tcp_stream) => {
                         let audio_source = audio_source.clone();
-                        let client_connected = client_connected.clone();
+                        let running = running.clone();
+                        
                         thread::spawn(move || {
-                            handle_client(tcp_stream, audio_source, client_connected);
+                            handle_client(tcp_stream, audio_source, running);
                         });
                     }
                     Err(e) => eprintln!("Error accepting connection: {}", e),
@@ -40,11 +44,10 @@ impl AudioSocketServer {
     }
 }
 
-fn handle_client(mut tcp_stream: TcpStream, audio_source: Arc<Mutex<AudioSource>>, client_connected: Arc<Mutex<bool>>) {
+fn handle_client(mut tcp_stream: TcpStream, audio_source: Arc<Mutex<AudioSource>>, running: Arc<Mutex<bool>>) {
     let mut buffer = [0; BUFFER_SIZE];
-    *client_connected.lock().unwrap() = true;
 
-    loop {
+    while *running.lock().unwrap() == true {
         match tcp_stream.read(&mut buffer) {
             Ok(size) if size == 0 => {
                 println!("Client closed connection");
@@ -79,6 +82,10 @@ fn handle_client(mut tcp_stream: TcpStream, audio_source: Arc<Mutex<AudioSource>
 
         audio_source.lock().unwrap().add_buffer(new_buff);
     }
+}
 
-    *client_connected.lock().unwrap() = false;
+impl Drop for AudioSocketServer {
+    fn drop(&mut self) {
+        *self.running.lock().unwrap() = false;
+    }
 }

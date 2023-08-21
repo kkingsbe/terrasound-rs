@@ -11,11 +11,10 @@ use config::PREBUFFER_SIZE;
 use rodio::{OutputStream, Sink, OutputStreamHandle};
 
 pub struct Terrasound {
-    is_playing: Arc<Mutex<bool>>,
     stream: OutputStream,
     stream_handle: OutputStreamHandle,
     audio_source: Arc<Mutex<AudioSource>>,
-    client_connected: Arc<Mutex<bool>>,
+    running: Arc<Mutex<bool>>,
     server: AudioSocketServer,
 }
 
@@ -24,7 +23,6 @@ impl Terrasound {
         let (_stream, _stream_handle) = OutputStream::try_default().unwrap();
 
         Terrasound {
-            is_playing: Arc::new(Mutex::new(false)),
             stream: _stream,
             stream_handle: _stream_handle.clone(),
             audio_source: Arc::new(Mutex::new(AudioSource { 
@@ -32,26 +30,21 @@ impl Terrasound {
                 current_buffer_idx: 0,
                 sink: Sink::try_new(&_stream_handle.clone()).unwrap()
             })),
-            client_connected: Arc::new(Mutex::new(false)),
+            running: Arc::new(Mutex::new(true)),
             server: AudioSocketServer::new(port),
         }
     }
 
-    pub fn start(&self) {
-        let client_connected = self.client_connected.clone();
+    pub fn start(&mut self) {
         let audio_source = self.audio_source.clone();
-        self.server.begin(self.client_connected.clone(), self.audio_source.clone());
+        self.server.begin(self.audio_source.clone(), self.running.clone());
 
+        let running = self.running.clone();
         thread::spawn(move || {
             let mut num_buffers: usize = 0;
             let mut playing = false;
 
-            loop {
-                if !client_connected.lock().unwrap().clone() {
-                    playing = false;
-                    continue;
-                }
-
+            while running.lock().unwrap().clone() == true {
                 let mut temp_audio_source = audio_source.lock().unwrap();
                 let current_prebuffer_size = num_buffers - temp_audio_source.current_buffer_idx;
                 let new_num_buffers = temp_audio_source.buffers.len();
@@ -72,8 +65,10 @@ impl Terrasound {
             }
         });
     }
+}
 
-    pub fn stop(&self) {
-        panic!("Not implemented");
+impl Drop for Terrasound {
+    fn drop(&mut self) {
+        *self.running.lock().unwrap() = false;
     }
 }
