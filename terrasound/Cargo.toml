@@ -1,6 +1,6 @@
 [package]
 name = "terrasound"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 description = "This is a Flutter package that allows you to play live audio data which is received over a local socket connection."
 repository = "https://github.com/kkingsbe/terrasound-rs"
