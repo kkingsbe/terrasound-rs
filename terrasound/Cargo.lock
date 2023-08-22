@@ -624,6 +624,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5ea92a5b6195c6ef2a0295ea818b312502c6fc94dde986c5553242e18fd4ce2"
 
 [[package]]
+name = "resonator"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f616aaf8cf7ffd6bfb2d127fad0a6ac2ad7d6b18309a0ac7c6de71dd028d5015"
+
+[[package]]
 name = "rodio"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -743,8 +749,9 @@ dependencies = [
 
 [[package]]
 name = "terrasound"
-version = "0.1.4"
+version = "0.2.0"
 dependencies = [
+ "resonator",
  "rodio",
 ]
 

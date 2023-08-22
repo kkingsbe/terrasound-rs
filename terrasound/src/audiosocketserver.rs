@@ -8,6 +8,7 @@ use crate::audiosource::AudioSource;
 use crate::config::{BUFFER_SIZE, METADATA_SIZE};
 use crate::metadata::Metadata;
 
+#[derive(Clone)]
 pub struct AudioSocketServer {
     pub port: u16,
     running: Arc<Mutex<bool>>

@@ -1,6 +1,6 @@
 [package]
 name = "terrasound"
-version = "0.1.4"
+version = "0.2.0"
 edition = "2021"
 description = "This is a Flutter package that allows you to play live audio data which is received over a local socket connection."
 repository = "https://github.com/kkingsbe/terrasound-rs"
@@ -9,3 +9,4 @@ license = "MIT"
 
 [dependencies]
 rodio = "0.17.1"
+resonator = "0.2.0" #{path="../../rust-live-audio-relay-server"} 
