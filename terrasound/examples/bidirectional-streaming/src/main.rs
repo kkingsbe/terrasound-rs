@@ -1,6 +1,6 @@
 use resonator::{
-    client::resonatorclient::ResonatorClient, common::audiobuffer::AudioBuffer,
-    server::resonator::ResonatorServer,
+    client::resonatorclient::ResonatorClient,
+    common::audiobuffer::AudioBuffer as ResonatorAudioBuffer, server::resonator::ResonatorServer,
 };
 use std::{
     sync::{
@@ -8,15 +8,14 @@ use std::{
         Arc, Mutex,
     },
     thread,
-    time::Duration
+    time::Duration,
 };
-use terrasound::Terrasound;
+use terrasound::{audiobuffer::AudioBuffer, Terrasound};
 
 fn create_peer(
     port: u16,
-    juce_audio: Arc<Mutex<Vec<AudioBuffer>>>,
-    resonator_audio: Arc<Mutex<Vec<AudioBuffer>>>,
-    data_check: Vec<AudioBuffer>,
+    juce_audio: Arc<Mutex<Vec<ResonatorAudioBuffer>>>,
+    resonator_audio: Arc<Mutex<Vec<ResonatorAudioBuffer>>>,
     stop_signal: Arc<AtomicBool>,
 ) {
     thread::spawn(move || {
@@ -29,75 +28,46 @@ fn create_peer(
         // Wait for the network
         thread::sleep(Duration::from_secs(1));
 
-        println!(
-            "Peer at port {} received audio length: {}",
-            port,
-            resonator_audio.lock().unwrap().len()
-        );
-        assert!(resonator_audio.lock().unwrap().eq(&data_check));
-
-        // Wait before stoping the main thread
-        thread::sleep(Duration::from_millis(1000));
-
-        stop_signal.store(true, Ordering::SeqCst);
+        while !stop_signal.load(Ordering::SeqCst) {}
     });
 }
 
 fn main() {
-    const SAMPLES: i32 = 2048;
-    const SAMPLE_RATE: i32 = 22050;
+    const P1_FILENAME: &str = "sound/256081__elettroedo__bass_phrase1.wav";
+    const P2_FILENAME: &str = "sound/256999__paul-evans__short-bach-melody.wav";
 
-    let mut data = Vec::new();
-    data.extend_from_slice(&SAMPLE_RATE.to_le_bytes());
-    data.extend_from_slice(&SAMPLES.to_le_bytes());
+    let mut d1 = AudioBuffer::buffers_from_file(P1_FILENAME);
+    let mut d2 = AudioBuffer::buffers_from_file(P2_FILENAME);
 
-    // Data from peer 1 has all 0's
-    let mut buf1 = data.clone();
-    buf1.extend_from_slice(&vec![0; SAMPLES as usize * 4]);
-
-    // While data from peer 2 has all 1's
-    let mut buf2 = data;
-    buf2.extend_from_slice(&vec![1; SAMPLES as usize * 4]);
+    let buf1: Vec<_> = d1.drain(..).map(|b| b.to_resonator()).collect();
+    let buf2: Vec<_> = d2.drain(..).map(|b| b.to_resonator()).collect();
 
     // Should have different ports for binding to and listening from
     let peer1_port = 6967;
     let peer2_port = 6968;
 
-    let stop_signal1 = Arc::new(AtomicBool::new(false));
-    let stop_signal2 = Arc::new(AtomicBool::new(false));
+    let stop_signal = Arc::new(AtomicBool::new(false));
 
     // Inputs
-    let juce_audio1: Arc<Mutex<Vec<AudioBuffer>>> =
-        Arc::new(Mutex::new(vec![AudioBuffer::from_bytes(
-            &buf1.try_into().unwrap(),
-        )]));
-    let juce_audio2: Arc<Mutex<Vec<AudioBuffer>>> =
-        Arc::new(Mutex::new(vec![AudioBuffer::from_bytes(
-            &buf2.try_into().unwrap(),
-        )]));
+    let juce_audio1: Arc<Mutex<Vec<ResonatorAudioBuffer>>> = Arc::new(Mutex::new(buf1));
+    let juce_audio2: Arc<Mutex<Vec<ResonatorAudioBuffer>>> = Arc::new(Mutex::new(buf2));
 
     // Outputs
-    let resonator_audio1: Arc<Mutex<Vec<AudioBuffer>>> = Arc::new(Mutex::new(Vec::new()));
-    let resonator_audio2: Arc<Mutex<Vec<AudioBuffer>>> = Arc::new(Mutex::new(Vec::new()));
-
-    // Audio data from peer 2 will be received by peer 1 and vice versa
-    let check_data1 = juce_audio2.lock().unwrap().clone();
-    let check_data2 = juce_audio1.lock().unwrap().clone();
+    let resonator_audio1: Arc<Mutex<Vec<ResonatorAudioBuffer>>> = Arc::new(Mutex::new(Vec::new()));
+    let resonator_audio2: Arc<Mutex<Vec<ResonatorAudioBuffer>>> = Arc::new(Mutex::new(Vec::new()));
 
     // Create the Terrasound peers
     create_peer(
         peer1_port,
         juce_audio1.clone(),
         resonator_audio1.clone(),
-        check_data1,
-        stop_signal1.clone(),
+        stop_signal.clone(),
     );
     create_peer(
         peer2_port,
         juce_audio2.clone(),
         resonator_audio2.clone(),
-        check_data2,
-        stop_signal2.clone(),
+        stop_signal.clone(),
     );
 
     // Initialize Resonator server
@@ -133,8 +103,10 @@ fn main() {
     );
     client2.begin();
 
-    while !stop_signal1.load(Ordering::SeqCst) && !stop_signal2.load(Ordering::SeqCst) {}
+    // Wait for the audio to finish playing    
+    thread::sleep(Duration::from_secs(6));
+    stop_signal.store(true, Ordering::SeqCst);
 
     println!("Terrasound terminating\n\n");
-    thread::sleep(Duration::from_millis(2000));
+    thread::sleep(Duration::from_secs(1));
 }
