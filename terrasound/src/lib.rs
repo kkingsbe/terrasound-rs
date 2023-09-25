@@ -1,6 +1,6 @@
 pub mod config;
 mod audiosource;
-pub mod audiobuffer;
+mod audiobuffer;
 mod metadata;
 mod audiosocketserver;
 mod localaudiosource;

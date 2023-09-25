@@ -1,11 +1,6 @@
-use rodio::{
-    source::{SamplesConverter, Source},
-    Decoder, Sink,
-};
+use rodio::Sink;
 
-use std::{fs::File, io::BufReader};
-
-use crate::{config::AUDIO_BUFFER_SIZE, metadata::Metadata};
+use crate::metadata::Metadata;
 
 #[derive(Debug, Clone)]
 pub struct AudioBuffer {
@@ -26,8 +21,8 @@ impl AudioBuffer {
             samples: buff.samples,
             metadata: Metadata {
                 sample_rate: buff.metadata.sample_rate,
-                buffer_size: buff.metadata.buffer_size,
-            },
+                buffer_size: buff.metadata.buffer_size
+            }
         }
     }
 
@@ -36,34 +31,8 @@ impl AudioBuffer {
             samples: self.samples.clone(),
             metadata: resonator::server::metadata::Metadata {
                 sample_rate: self.metadata.sample_rate,
-                buffer_size: self.metadata.buffer_size,
-            },
+                buffer_size: self.metadata.buffer_size
+            }
         }
-    }
-
-    /// Create a vector of `AudioBuffer` from a given file. Each of the buffers is exactly
-    /// `AUDIO_BUFFER_SIZE` in length.
-    pub fn buffers_from_file(filename: &str) -> Vec<Self> {
-        let converter: SamplesConverter<_, f32> =
-            Decoder::new(BufReader::new(File::open(filename).unwrap()))
-                .unwrap()
-                .convert_samples();
-        let channels = converter.channels();
-        let sample_rate = converter.sample_rate() as i32;
-
-        assert_eq!(channels, 1, "Only single channel audio is supported");
-
-        let flattened_samples: Vec<_> = converter.collect();
-
-        flattened_samples
-            .chunks_exact(AUDIO_BUFFER_SIZE)
-            .map(|chunk| Self {
-                samples: chunk.iter().copied().collect(),
-                metadata: Metadata {
-                    sample_rate,
-                    buffer_size: AUDIO_BUFFER_SIZE as i32,
-                },
-            })
-            .collect()
     }
 }
