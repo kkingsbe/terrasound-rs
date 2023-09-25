@@ -634,8 +634,7 @@ checksum = "e5ea92a5b6195c6ef2a0295ea818b312502c6fc94dde986c5553242e18fd4ce2"
 [[package]]
 name = "resonator"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f616aaf8cf7ffd6bfb2d127fad0a6ac2ad7d6b18309a0ac7c6de71dd028d5015"
+source = "git+https://github.com/kkingsbe/resonator-rs.git?rev=9096f57f9d236cf941aa8a4d23db4d6d7a45f347#9096f57f9d236cf941aa8a4d23db4d6d7a45f347"
 
 [[package]]
 name = "rodio"

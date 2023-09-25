@@ -8,4 +8,8 @@ Links are listed below:
 
 [short bach melody.wav](https://freesound.org/people/Paul%20Evans/sounds/256999/)
 
+[violin origional.wav](https://freesound.org/people/jcveliz/sounds/92002/)
+
+[oleviolin](https://freesound.org/people/oleviolin/sounds/557469/)
+
 Current code only accepts single channel audio.

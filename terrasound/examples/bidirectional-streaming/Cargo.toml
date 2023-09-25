@@ -6,3 +6,7 @@ edition = "2021"
 [dependencies]
 terrasound = { path = "../../" }
 resonator = "0.2.0"
+
+# Race condition patch, remove once resonator is updated
+[patch.crates-io]
+resonator = { git = "https://github.com/kkingsbe/resonator-rs.git", rev = "9096f57f9d236cf941aa8a4d23db4d6d7a45f347" }
