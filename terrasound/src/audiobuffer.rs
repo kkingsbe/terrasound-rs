@@ -29,7 +29,7 @@ impl AudioBuffer {
     pub fn to_resonator(&self) -> resonator::common::audiobuffer::AudioBuffer {
         resonator::common::audiobuffer::AudioBuffer {
             samples: self.samples.clone(),
-            metadata: resonator::server::metadata::Metadata {
+            metadata: resonator::common::metadata::Metadata {
                 sample_rate: self.metadata.sample_rate,
                 buffer_size: self.metadata.buffer_size
             }
