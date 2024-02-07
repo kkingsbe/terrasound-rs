@@ -9,4 +9,4 @@ license = "MIT"
 
 [dependencies]
 rodio = "0.17.1"
-resonator = "0.3.0" #{path="../../rust-live-audio-relay-server"}
+resonator = "0.3.2" #{path="../../rust-live-audio-relay-server"}
