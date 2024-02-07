@@ -189,7 +189,7 @@ impl Terrasound {
                             sink.push(next_buff.to_resonator());
                         } else {
                             println!("Error occured while processing audio for resonator-rs");
-                            self.on_error_log.as_ref().unwrap()("Error occured while processing audio for resonator-rs".to_string());
+                            //self.on_error_log.as_ref().unwrap()("Error occured while processing audio for resonator-rs".to_string());
                         }
                     }
                     num_buffers = new_num_buffers;
@@ -212,7 +212,7 @@ impl Terrasound {
                         }
                         
                         println!("Terrasound: Playing next buffer");
-                        self.on_info_log.as_ref().unwrap()("Playing next buffer".to_string());
+                        //self.on_info_log.as_ref().unwrap()("Playing next buffer".to_string());
                         //Audio will be played from speakers
                         temp_local_source.play_next();
                     }
