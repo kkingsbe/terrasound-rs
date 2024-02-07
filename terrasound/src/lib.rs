@@ -33,7 +33,10 @@ pub struct Terrasound {
     local_source: Option<Arc<Mutex<LocalAudioSource>>>, //Used for recieving audio from a local source
     incoming_data: Option<Arc<Mutex<Vec<resonator::common::audiobuffer::AudioBuffer>>>>,
     outgoing_data: Option<Arc<Mutex<Vec<resonator::common::audiobuffer::AudioBuffer>>>>,
-    mode: Arc<Mutex<TerrasoundMode>>
+    mode: Arc<Mutex<TerrasoundMode>>,
+    on_info_log: Option<fn(String)>,
+    on_error_log: Option<fn(String)>,
+    on_warn_log: Option<fn(String)>,
 }
 
 impl Terrasound {
@@ -81,7 +84,10 @@ impl Terrasound {
                 local_source: None,
                 incoming_data: None,
                 outgoing_data,
-                mode: Arc::new(Mutex::new(mode))
+                mode: Arc::new(Mutex::new(mode)),
+                on_info_log: Some(|msg| println!("{}", msg)),
+                on_error_log: Some(|msg| eprintln!("{}", msg)),
+                on_warn_log: Some(|msg| eprintln!("{}", msg)),
             }
         } else if mode == TerrasoundMode::ResonatorInSpeakerOut {
             return Terrasound {
@@ -93,7 +99,10 @@ impl Terrasound {
                 local_source: Some(Arc::new(Mutex::new(LocalAudioSource::new(incoming_data.clone().unwrap(), Sink::try_new(&_stream_handle.clone()).unwrap())))),
                 incoming_data,
                 outgoing_data,
-                mode: Arc::new(Mutex::new(mode))
+                mode: Arc::new(Mutex::new(mode)),
+                on_info_log: Some(|msg| println!("{}", msg)),
+                on_error_log: Some(|msg| eprintln!("{}", msg)),
+                on_warn_log: Some(|msg| eprintln!("{}", msg)),
             }
         } else if mode == TerrasoundMode::PortInResonatorOut {
             return Terrasound {
@@ -109,7 +118,10 @@ impl Terrasound {
                 local_source: None,
                 incoming_data: None,
                 outgoing_data,
-                mode: Arc::new(Mutex::new(mode))
+                mode: Arc::new(Mutex::new(mode)),
+                on_info_log: Some(|msg| println!("{}", msg)),
+                on_error_log: Some(|msg| eprintln!("{}", msg)),
+                on_warn_log: Some(|msg| eprintln!("{}", msg)),
             }
         } else {
             panic!("Invalid mode specified");
@@ -177,6 +189,7 @@ impl Terrasound {
                             sink.push(next_buff.to_resonator());
                         } else {
                             println!("Error occured while processing audio for resonator-rs");
+                            self.on_error_log.as_ref().unwrap()("Error occured while processing audio for resonator-rs".to_string());
                         }
                     }
                     num_buffers = new_num_buffers;
@@ -199,6 +212,7 @@ impl Terrasound {
                         }
                         
                         println!("Terrasound: Playing next buffer");
+                        self.on_info_log.as_ref().unwrap()("Playing next buffer".to_string());
                         //Audio will be played from speakers
                         temp_local_source.play_next();
                     }
