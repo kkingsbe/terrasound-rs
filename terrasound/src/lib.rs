@@ -34,9 +34,9 @@ pub struct Terrasound {
     incoming_data: Option<Arc<Mutex<Vec<resonator::common::audiobuffer::AudioBuffer>>>>,
     outgoing_data: Option<Arc<Mutex<Vec<resonator::common::audiobuffer::AudioBuffer>>>>,
     mode: Arc<Mutex<TerrasoundMode>>,
-    on_info_log: Option<fn(String)>,
-    on_error_log: Option<fn(String)>,
-    on_warn_log: Option<fn(String)>,
+    pub on_info_log: Option<fn(String)>,
+    pub on_error_log: Option<fn(String)>,
+    pub on_warn_log: Option<fn(String)>,
 }
 
 impl Terrasound {
